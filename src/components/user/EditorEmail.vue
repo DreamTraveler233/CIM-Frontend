@@ -19,6 +19,21 @@ const state = reactive({
   code: ''
 })
 
+const resetForm = () => {
+  state.password = ''
+  state.email = ''
+  state.code = ''
+  formRef.value?.restoreValidation?.()
+}
+
+const updateShow = (value: boolean) => {
+  model.value = value
+}
+
+const closeModal = () => {
+  updateShow(false)
+}
+
 const rules = {
   password: {
     required: true,
@@ -59,22 +74,30 @@ const onSubmit = async () => {
     password: rsaEncrypt(state.password)
   }
 
-  await fetchApi(fetchUserEmailUpdate, params, {
+  const [err] = await fetchApi(fetchUserEmailUpdate, params, {
     loading,
-    successText: '邮箱修改成功',
-    onSuccess: () => {
-      emit('success', state.email)
-    }
+    successText: '邮箱修改成功'
   })
+
+  if (!err) {
+    resetForm()
+    model.value = false
+    emit('success', state.email)
+  }
 }
 
-const onValidate = (e: any) => {
-  e.preventDefault()
-
-  formRef.value.validate((errors: any) => {
+const onValidate = (e?: Event) => {
+  e?.preventDefault?.()
+  formRef.value?.validate((errors: any) => {
     !errors && onSubmit()
   })
 }
+
+watch(model, (value) => {
+  if (!value) {
+    resetForm()
+  }
+})
 </script>
 
 <template>
@@ -84,26 +107,26 @@ const onValidate = (e: any) => {
     title="修改邮箱？"
     class="modal-radius"
     style="max-width: 400px"
-    :on-update:show="(value) => (model = value)"
+    :on-update:show="updateShow"
   >
     <n-form ref="formRef" :model="state" :rules="rules">
       <n-form-item label="登录密码" path="password">
-        <n-input placeholder="请填写登录密码" type="password" v-model:value="state.password" />
+        <n-input placeholder="请填写登录密码" type="password" v-model:value="state.password" @keydown.enter.prevent="onValidate" />
       </n-form-item>
 
       <n-form-item label="新邮箱" path="email">
-        <n-input placeholder="请填写新邮箱" type="text" v-model:value="state.email" />
+        <n-input placeholder="请填写新邮箱" type="text" v-model:value="state.email" @keydown.enter.prevent="onValidate" />
       </n-form-item>
 
       <n-form-item label="邮箱验证码" path="code">
-        <n-input placeholder="请填写验证码" type="text" v-model:value="state.code" />
+        <n-input placeholder="请填写验证码" type="text" v-model:value="state.code" @keydown.enter.prevent="onValidate" />
         <Countdown class="mt-l5" @click="onSendEmail"> </Countdown>
       </n-form-item>
     </n-form>
 
     <template #footer>
       <div style="width: 100%; text-align: right">
-        <n-button type="tertiary" @click="model = false"> 取消 </n-button>
+        <n-button type="tertiary" @click="closeModal"> 取消 </n-button>
         <n-button
           type="primary"
           text-color="#ffffff"

@@ -1,6 +1,5 @@
 <script lang="ts" setup>
 import {
-  useAccessPrompt,
   useClickEvent,
   useConnectStatus,
   useThemeMode,
@@ -26,7 +25,6 @@ const { getDarkTheme, getThemeOverride } = useThemeMode()
 
 onMounted(() => {
   useVisibilityChange()
-  useAccessPrompt()
   useUnreadMessage()
   useConnectStatus()
   useClickEvent()

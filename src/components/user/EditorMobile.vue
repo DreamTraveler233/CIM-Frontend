@@ -19,6 +19,21 @@ const state = reactive({
   sms_code: ''
 })
 
+const resetForm = () => {
+  state.password = ''
+  state.mobile = ''
+  state.sms_code = ''
+  formRef.value?.restoreValidation?.()
+}
+
+const updateShow = (value: boolean) => {
+  model.value = value
+}
+
+const closeModal = () => {
+  updateShow(false)
+}
+
 const rules = {
   password: {
     required: true,
@@ -49,7 +64,7 @@ const onSendSms = async () => {
 
   const params = {
     mobile: state.mobile,
-    channel: 'change_account'
+    channel: 'mobile_update'
   }
 
   const [err, data] = await fetchApi(fetchCommonSendSms, params)
@@ -71,22 +86,30 @@ const onSubmit = async () => {
     password: rsaEncrypt(state.password)
   }
 
-  await fetchApi(fetchUserMobileUpdate, params, {
+  const [err] = await fetchApi(fetchUserMobileUpdate, params, {
     loading,
-    successText: '手机号修改成功',
-    onSuccess: () => {
-      emit('success', state.mobile)
-    }
+    successText: '手机号修改成功'
   })
+
+  if (!err) {
+    resetForm()
+    model.value = false
+    emit('success', state.mobile)
+  }
 }
 
-const onValidate = (e: any) => {
-  e.preventDefault()
-
-  formRef.value.validate((errors: any) => {
+const onValidate = (e?: Event) => {
+  e?.preventDefault?.()
+  formRef.value?.validate((errors: any) => {
     !errors && onSubmit()
   })
 }
+
+watch(model, (value) => {
+  if (!value) {
+    resetForm()
+  }
+})
 </script>
 
 <template>
@@ -96,7 +119,7 @@ const onValidate = (e: any) => {
     title="换绑手机？"
     class="modal-radius"
     style="max-width: 400px"
-    :on-update:show="(value) => (model = value)"
+    :on-update:show="updateShow"
   >
     <n-form ref="formRef" :model="state" :rules="rules">
       <n-form-item label="登录密码" path="password">
@@ -115,7 +138,7 @@ const onValidate = (e: any) => {
 
     <template #footer>
       <div style="width: 100%; text-align: right">
-        <n-button type="tertiary" @click="model = false"> 取消 </n-button>
+        <n-button type="tertiary" @click="closeModal"> 取消 </n-button>
         <n-button
           type="primary"
           text-color="#ffffff"

@@ -268,7 +268,7 @@ export interface AuthOauthResponse {
 }
 
 export interface AuthRegisterRequest {
-  /** 登录手机号 */
+  /** 登录昵称 */
   nickname?: string
   /** 登录手机号 */
   mobile?: string
@@ -1055,21 +1055,55 @@ export interface UserSettingResponse {
   setting: UserSettingResponse_ConfigInfo
 }
 
+
+/** 用户个性化配置 */
 export interface UserSettingResponse_ConfigInfo {
+  /** 主题模式（如 dark/light） */
   theme_mode: string
+  /** 聊天背景图片 */
   theme_bag_img: string
+  /** 主题主色调 */
   theme_color: string
+  /** 通知提示音 */
   notify_cue_tone: string
+  /** 键盘事件通知设置 */
   keyboard_event_notify: string
 }
 
+
+/** 用户基础信息 */
 export interface UserSettingResponse_UserInfo {
+  /** 用户ID */
   uid: number
+  /** 昵称 */
   nickname: string
+  /** 头像URL */
   avatar: string
+  /** 个性签名 */
   motto: string
+  /** 性别（0未知 1男 2女） */
   gender: number
+  /** 是否企业用户 */
   is_qiye: boolean
+  /** 手机号 */
   mobile: string
+  /** 邮箱 */
   email: string
 }
+
+/** 用户设置保存请求 */
+export interface UserSettingSaveRequest {
+  /** 主题模式（light/dark/auto） */
+  theme_mode?: string
+  /** 聊天背景图片URL */
+  theme_bag_img?: string
+  /** 主题主色调 */
+  theme_color?: string
+  /** 通知提示音开关（Y/N 或 true/false 字符串） */
+  notify_cue_tone?: string
+  /** 键盘事件通知开关（Y/N 或 true/false 字符串） */
+  keyboard_event_notify?: string
+}
+
+/** 用户设置保存响应 */
+export interface UserSettingSaveResponse {}

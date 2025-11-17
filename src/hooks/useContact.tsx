@@ -3,6 +3,8 @@ import { fetchApi } from '@/apis/request.ts'
 import { NInput } from 'naive-ui'
 import { h } from 'vue'
 import { useInject } from './useInject.ts'
+import { bus } from '@/utils'
+import { ContactConst } from '@/constant/event-bus.ts'
 
 interface IContactParams {
   user_id: number
@@ -35,8 +37,11 @@ export function useContact() {
 
         const [err] = await fetchApi(fetchContactDelete, { user_id: item.user_id }, options)
         if (err) return false
-
+        // 通知刷新联系人列表（全局事件），并执行可选回调
+        bus.emit(ContactConst.UpdateGroupList, {})
+        bus.emit(ContactConst.UpdateContactList, {})
         if (fn) fn()
+        return true
       }
     })
   }
@@ -67,7 +72,7 @@ export function useContact() {
       return true
     }
 
-    dialog.create({
+    const d = dialog.create({
       showIcon: false,
       title: '修改备注',
       content: () => {
@@ -75,7 +80,15 @@ export function useContact() {
           defaultValue: item.remark,
           placeholder: '请输入备注信息',
           style: { marginTop: '20px' },
-          onInput: (value: string) => (remark = value)
+          onInput: (value: string) => (remark = value),
+          onKeydown: async (e: KeyboardEvent) => {
+            if (e.key === 'Enter') {
+              const result = await onPositiveClick()
+              if (result) {
+                d.destroy()
+              }
+            }
+          }
         })
       },
       negativeText: '取消',

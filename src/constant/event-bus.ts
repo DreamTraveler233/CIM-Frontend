@@ -1,5 +1,8 @@
 export const enum ContactConst {
-  UpdateRemark = 'contact:update-remark'
+  UpdateRemark = 'contact:update-remark',
+  // 触发联系人分组列表刷新
+  UpdateGroupList = 'contact:update-group-list',
+  UpdateContactList = 'contact:update-list'
 }
 
 export const enum EditorConst {

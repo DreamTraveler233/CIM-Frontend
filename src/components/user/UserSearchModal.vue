@@ -2,6 +2,7 @@
 import { fetchContactSearch } from '@/apis/api'
 import { fetchApi } from '@/apis/request'
 import { useInject } from '@/hooks'
+import { isMobile } from '@/utils/validate'
 
 const { toShowUserInfo } = useInject()
 
@@ -20,7 +21,9 @@ const onShowError = (value: boolean) => {
 }
 
 const onSubmit = async () => {
-  if (!keyword.value.length) return
+  if (!isMobile(keyword.value)) {
+    return window['$message'].warning('请正确填写手机号')
+  }
 
   const [err, data] = await fetchApi(
     fetchContactSearch,
@@ -67,7 +70,7 @@ const onClose = () => {
       >
         <n-input
           placeholder="请输入手机号"
-          :maxlength="30"
+          :maxlength="11"
           v-model:value="keyword"
           @keydown.enter="onSubmit"
         />

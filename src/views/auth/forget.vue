@@ -6,7 +6,7 @@ import { rsaEncrypt } from '@/utils/rsa'
 import { isMobile } from '@/utils/validate'
 
 // 初始化短信按钮锁
-const { startCountdown, Countdown } = useSmsLock('FORGET_PSW_SMS', 120)
+const { startCountdown, Countdown } = useSmsLock('FORGET_PSW_SMS', 60)
 
 const router = useRouter()
 const formRef = ref()
@@ -76,7 +76,7 @@ const onSendSms = async () => {
     return window['$message'].warning('请正确填写手机号')
   }
 
-  const [err] = await fetchApi(
+  const [err, data] = await fetchApi(
     fetchCommonSendSms,
     {
       mobile: model.username,
@@ -87,6 +87,11 @@ const onSendSms = async () => {
 
   if (err) return
   startCountdown()
+
+  if (data?.sms_code) {
+    model.sms_code = data.sms_code
+    window['$message'].success('已开启验证码自动填充')
+  }
 }
 </script>
 

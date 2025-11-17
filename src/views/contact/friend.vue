@@ -19,20 +19,28 @@ const isShowUserSearch = ref(false)
 const loading = ref(false)
 const isShowGroupModal = ref(false)
 const keywords = ref('')
-const index = ref(0)
+// -1: 全部好友, 0: 未分组, >0: 各分组 id
+const index = ref(-1)
 const items = ref<ContactListResponse_Item[]>([])
 const groups: any = ref([])
 
 const filter: any = computed(() => {
   return items.value.filter((item: ContactListResponse_Item) => {
-    let value = item.remark || item.nickname
+    const value = item.remark || item.nickname
+    const findIndex = value.toLowerCase().indexOf(keywords.value.toLowerCase())
 
-    let findIndex = value.toLowerCase().indexOf(keywords.value.toLowerCase())
-    if (index.value == 0) {
-      return findIndex != -1
+    // -1 表示全部好友
+    if (index.value === -1) {
+      return findIndex !== -1
     }
 
-    return findIndex != -1 && index.value == item.group_id
+    // 0 表示未分组（group_id === 0）
+    if (index.value === 0) {
+      return findIndex !== -1 && Number(item.group_id) === 0
+    }
+
+    // 其他为具体分组 id
+    return findIndex !== -1 && Number(index.value) === Number(item.group_id)
   })
 })
 
@@ -97,15 +105,36 @@ onMounted(() => {
   loadContactGroupList()
 })
 
-useEventBus([{ name: ContactConst.UpdateRemark, event: onChangeRemark }])
+useEventBus([
+  { name: ContactConst.UpdateRemark, event: onChangeRemark },
+  {
+    name: ContactConst.UpdateGroupList,
+    event: (data: any) => {
+      // 重新加载分组列表
+      loadContactGroupList()
+      // 如果发布者要求重置选中的 tab（例如删除了当前分组），则回到全部
+      if (data && data.resetIndex) {
+        index.value = -1
+      }
+    }
+  },
+  { name: ContactConst.UpdateContactList, event: loadContactList }
+])
 </script>
 
 <template>
   <section class="el-container is-vertical h-full">
     <header class="el-header from-header border-bottom">
       <div class="groups">
-        <n-tabs v-if="groups.length" v-model:value="index">
-          <n-tab v-for="tab in groups" :key="tab.id" :name="tab.id">
+        <n-tabs v-model:value="index">
+          <!-- 固定的全部好友标签，name 为 -1，对应 filter 中的全部逻辑 -->
+          <n-tab :name="-1">全部好友({{ items.length }})</n-tab>
+
+          <!-- 固定的未分组（group_id === 0）标签 -->
+          <n-tab :name="0">未分组({{ items.filter(i => Number(i.group_id) === 0).length }})</n-tab>
+
+          <!-- 动态分组标签（确保 name 为数字类型） -->
+          <n-tab v-for="tab in groups" :key="tab.id" :name="Number(tab.id)">
             {{ tab.name }}({{ tab.count }})
           </n-tab>
         </n-tabs>

@@ -127,7 +127,7 @@ const onJoinContact = async () => {
 const onChangeRemark = async () => {
   const onSuccess = () => {
     editCardPopover.value.setShow(false)
-    userInfo.contact_remark.remark = friendRemark.value
+    userInfo.contact_remark = friendRemark.value
 
     const params = {
       user_id: props.userId,
@@ -167,6 +167,11 @@ const handleSelectGroup = async (value: number) => {
 
   if (err) return
   userInfo.contact_group_id = value
+  // 关闭详情卡并通知刷新分组列表以及好友列表
+  emit('close')
+  bus.emit(ContactConst.UpdateGroupList, {})
+  // 同时通知刷新联系人列表（以更新分组下的好友）
+  bus.emit(ContactConst.UpdateContactList, {})
 }
 
 const onClose = () => {
@@ -416,9 +421,11 @@ onLoadUserGroup()
       color: var(--im-text-color);
       font-size: 12px;
       margin-bottom: 20px;
-      display: -webkit-box;
-      -webkit-box-orient: vertical;
-      -webkit-line-clamp: 2;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  /* 标准属性以兼容性为由提示，补充一条 */
+  line-clamp: 2;
+  -webkit-line-clamp: 2;
       position: relative;
       overflow: hidden;
     }

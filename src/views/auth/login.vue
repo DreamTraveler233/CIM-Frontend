@@ -28,6 +28,7 @@ const rules = {
 }
 
 const loading = ref(false)
+const isLoggingIn = ref(false) // 防重复登录标志
 
 const model = reactive({
   username: '',
@@ -35,20 +36,28 @@ const model = reactive({
 })
 
 const onLogin = async () => {
+  if (isLoggingIn.value) return // 防止重复登录
+
+  isLoggingIn.value = true
   sync(
     async () => {
-      const data = await fetchAuthLogin({
-        mobile: model.username,
-        password: rsaEncrypt(model.password),
-        platform: 'web'
-      })
+      try {
+        const data = await fetchAuthLogin({
+          mobile: model.username,
+          password: rsaEncrypt(model.password),
+          platform: 'web'
+        })
 
-      setToken(data.access_token, data.expires_in)
-      ws.connect()
-      message.success('登录成功，即将进入系统')
-      userStore.loadSetting()
+        setToken(data.access_token, data.expires_in)
+        ws.connect()
+        message.success('登录成功，即将进入系统')
+        userStore.loadSetting()
 
-      router.push(route.params?.redirect || ('/' as any))
+  await router.push(route.params?.redirect || ('/' as any))
+      } finally {
+        // 无论成功失败都重置，避免重复提交
+        isLoggingIn.value = false
+      }
     },
     { loading }
   )
@@ -65,11 +74,14 @@ const onValidate = (e: Event) => {
 
 const onClickAccount = (type: number) => {
   if (type == 1) {
-    model.username = '13800000001'
-    model.password = 'admin123'
-  } else {
-    model.username = '13800000002'
-    model.password = 'admin123'
+    model.username = '11111111111'
+    model.password = '123456'
+  } else if(type == 2) {
+    model.username = '12222222222'
+    model.password = '123456'
+  }else if(type == 3){
+    model.username = '13333333333'
+    model.password = '123456'
   }
 
   onLogin()
@@ -105,6 +117,7 @@ const toOauth = async (oauth_type: 'github' | 'gitee') => {
             type="password"
             show-password-on="click"
             v-model:value="model.password"
+            autocomplete="current-password"
             @keydown.enter="onValidate"
           />
         </n-form-item>
@@ -112,6 +125,7 @@ const toOauth = async (oauth_type: 'github' | 'gitee') => {
         <n-space>
           <n-button text color="#409eff" @click="onClickAccount(1)"> 预览账号1 </n-button>
           <n-button text color="#409eff" @click="onClickAccount(2)"> 预览账号2 </n-button>
+          <n-button text color="#409eff" @click="onClickAccount(3)"> 预览账号3 </n-button>
         </n-space>
 
         <n-button

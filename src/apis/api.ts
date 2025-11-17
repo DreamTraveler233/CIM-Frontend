@@ -183,7 +183,9 @@ import type {
   UserPasswordUpdateRequest,
   UserPasswordUpdateResponse,
   UserSettingRequest,
-  UserSettingResponse
+  UserSettingResponse,
+  UserSettingSaveRequest,
+  UserSettingSaveResponse
 } from './types.d.ts'
 
 /**
@@ -462,10 +464,10 @@ export const fetchContactGroupSave = createApi<ContactGroupSaveRequest, ContactG
 /**
  * 修改联系人分组接口
  */
-export const fetchContactChangeGroup = createApi<
-  ContactChangeGroupRequest,
-  ContactChangeGroupResponse
->('/api/v1/contact/change-group', 'POST')
+export const fetchContactChangeGroup = createApi<ContactChangeGroupRequest, ContactChangeGroupResponse>(
+  '/api/v1/contact/change-group', 
+  'POST'
+)
 
 /**
  * 联系人删除接口
@@ -763,6 +765,7 @@ export const fetchGroupSetting = createApi<GroupSettingRequest, GroupSettingResp
   'POST'
 )
 
+// 消息删除接口
 export const fetchMessageDelete = createApi<MessageDeleteRequest, MessageDeleteResponse>(
   '/api/v1/message/delete',
   'POST'
@@ -792,6 +795,7 @@ export const fetchMessageRecords = createApi<MessageRecordsRequest, MessageRecor
   'POST'
 )
 
+// 消息撤回接口
 export const fetchMessageRevoke = createApi<MessageRevokeRequest, MessageRevokeResponse>(
   '/api/v1/message/revoke',
   'POST'
@@ -908,3 +912,11 @@ export const fetchUserSetting = createApi<UserSettingRequest, UserSettingRespons
   '/api/v1/user/setting',
   'POST'
 )
+
+/**
+ * 保存用户配置信息接口
+ */
+export const fetchUserSettingSave = createApi<
+  UserSettingSaveRequest,
+  UserSettingSaveResponse
+>('/api/v1/user/setting/save', 'POST')

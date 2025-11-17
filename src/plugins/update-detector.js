@@ -19,7 +19,11 @@ export class JsUpdateDetector {
   init() {
     try {
       // 获取初始页面中的目标JS元素
-      const jsElement = document.querySelector(this.options.jsSelector)
+      let jsElement = document.querySelector(this.options.jsSelector)
+      if (!jsElement) {
+        // 备选：开发模式下的脚本
+        jsElement = document.querySelector('script[src^="/src/"]')
+      }
       if (jsElement) {
         this.initialJsSrc = jsElement.src
         console.log('初始JS路径:', this.initialJsSrc)

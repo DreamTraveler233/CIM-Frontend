@@ -52,21 +52,26 @@ export class ApiClient {
 
   request<R = any, T = any>(url: string, method?: string): ApiFunction<R, T> {
     return async (params: R, options?: ApiOptions): Promise<T> => {
+      // 构建完整 URL
       const uri = this.baseUrl + url
 
+      // 合并请求参数和默认参数
       const mergedOptions: ApiOptions = {
         ...this.defaultOptions,
         ...options,
         method: options?.method || method || this.defaultOptions.method
       }
 
+      // 构建请求体
       let req: RequestInit = { ...mergedOptions }
 
+      // 合并 headers
       req.headers = {
         ...(this.defaultOptions.headers as Record<string, string>),
         ...(options?.headers as Record<string, string>)
       }
 
+      // 处理 GET 请求的查询参数
       if (mergedOptions.method != 'GET') {
         if (params instanceof FormData) {
           req.body = params
@@ -76,10 +81,12 @@ export class ApiClient {
         }
       }
 
+      // 执行请求拦截器
       for (const interceptor of this.interceptor.request.interceptors) {
         req = await interceptor(uri, req)
       }
 
+      // 发起请求并处理响应
       const to = async () => {
         let timer: NodeJS.Timeout | number | undefined
         let abortController: AbortController | undefined

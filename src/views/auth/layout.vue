@@ -3,14 +3,14 @@ import { isElectronMode } from '@/utils/electron'
 </script>
 
 <template>
-  <div id="logo-name" v-if="!isElectronMode()">Lumen IM</div>
+  <div id="logo-name" v-if="!isElectronMode()">简讯 IM</div>
 
   <section class="section">
     <router-view />
   </section>
 
   <div class="copyright">
-    <span>©2020 - 2025 Lumen IM 在线聊天</span>
+    <span>©2020 - 2025 简讯 IM 在线聊天</span>
     <span><a href="http://beian.miit.gov.cn" target="_blank">黔ICP备20006767号-2</a></span>
     <span>Github源码</span>
   </div>

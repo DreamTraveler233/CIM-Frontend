@@ -13,6 +13,21 @@ const state = reactive({
   new_password2: ''
 })
 
+const resetForm = () => {
+  state.old_password = ''
+  state.new_password = ''
+  state.new_password2 = ''
+  formRef.value?.restoreValidation?.()
+}
+
+const updateShow = (value: boolean) => {
+  model.value = value
+}
+
+const closeModal = () => {
+  updateShow(false)
+}
+
 const rules = {
   old_password: {
     required: true,
@@ -43,7 +58,7 @@ const rules = {
 const loading = ref(false)
 
 const onSubmit = async () => {
-  await fetchApi(
+  const [err] = await fetchApi(
     fetchUserPasswordUpdate,
     {
       old_password: rsaEncrypt(state.old_password),
@@ -51,21 +66,28 @@ const onSubmit = async () => {
     },
     {
       loading,
-      successText: '密码修改成功',
-      onSuccess: () => {
-        model.value = false
-      }
+      successText: '密码修改成功'
     }
   )
+
+  if (!err) {
+    resetForm()
+    model.value = false
+  }
 }
 
-const onValidate = (e: any) => {
-  e.preventDefault()
-
-  formRef.value.validate((errors: any) => {
+const onValidate = (e?: Event) => {
+  e?.preventDefault?.()
+  formRef.value?.validate((errors: any) => {
     !errors && onSubmit()
   })
 }
+
+watch(model, (value) => {
+  if (!value) {
+    resetForm()
+  }
+})
 </script>
 
 <template>
@@ -75,15 +97,25 @@ const onValidate = (e: any) => {
     title="修改密码？"
     class="modal-radius"
     style="max-width: 400px"
-    :on-update:show="(value) => (model = value)"
+    :on-update:show="updateShow"
   >
     <n-form ref="formRef" :model="state" :rules="rules">
       <n-form-item label="登录密码" path="old_password">
-        <n-input placeholder="请填写登录密码" type="password" v-model:value="state.old_password" />
+        <n-input
+          placeholder="请填写登录密码"
+          type="password"
+          v-model:value="state.old_password"
+          @keydown.enter.prevent="onValidate"
+        />
       </n-form-item>
 
       <n-form-item label="设置新密码" path="new_password">
-        <n-input placeholder="请填写新密码" type="password" v-model:value="state.new_password" />
+        <n-input
+          placeholder="请填写新密码"
+          type="password"
+          v-model:value="state.new_password"
+          @keydown.enter.prevent="onValidate"
+        />
       </n-form-item>
 
       <n-form-item label="确认新密码" path="new_password2">
@@ -91,13 +123,14 @@ const onValidate = (e: any) => {
           placeholder="请再次填写新密码"
           type="password"
           v-model:value="state.new_password2"
+          @keydown.enter.prevent="onValidate"
         />
       </n-form-item>
     </n-form>
 
     <template #footer>
       <div style="width: 100%; text-align: right">
-        <n-button type="tertiary" @click="model = false"> 取消 </n-button>
+  <n-button type="tertiary" @click="closeModal"> 取消 </n-button>
         <n-button
           type="primary"
           text-color="#ffffff"

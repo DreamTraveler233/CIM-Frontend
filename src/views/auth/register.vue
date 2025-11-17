@@ -97,7 +97,7 @@ const onSendSms = async () => {
       channel: 'register'
     })
 
-    startCountdown()
+    // startCountdown()
 
     if (data?.sms_code) {
       model.sms_code = data.sms_code
@@ -146,6 +146,7 @@ const onSendSms = async () => {
             type="password"
             show-password-on="click"
             v-model:value="model.password"
+            autocomplete="current-password"
             @keydown.enter="onValidate"
           />
         </n-form-item>

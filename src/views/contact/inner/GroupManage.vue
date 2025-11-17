@@ -2,6 +2,8 @@
 import { fetchContactGroupList, fetchContactGroupSave } from '@/apis/api'
 import { fetchApi } from '@/apis/request'
 import { useInject } from '@/hooks'
+import { bus } from '@/utils'
+import { ContactConst } from '@/constant/event-bus'
 import { Delete, Drag } from '@icon-park/vue-next'
 import { VueDraggable } from 'vue-draggable-plus'
 
@@ -46,6 +48,8 @@ const onLoadData = async () => {
 }
 
 const onSubmit = async () => {
+  // 如果存在空名称，阻止提交（与保存按钮一致）
+  if (isCanSubmit.value) return
   const [err] = await fetchApi(
     fetchContactGroupSave,
     {
@@ -56,8 +60,11 @@ const onSubmit = async () => {
     }
   )
   if (err) return
-
   emit('relaod')
+  // 保存分组后同时通知刷新联系人列表（以更新被删除分组下的好友显示）
+  bus.emit(ContactConst.UpdateContactList, {})
+  // 通知分组列表更新，同时告诉监听方重置选中的 tab（回到全部）
+  bus.emit(ContactConst.UpdateGroupList, { resetIndex: true })
   emit('close')
 }
 
@@ -112,6 +119,7 @@ onLoadData()
             v-model:value="item.name"
             :maxlength="20"
             style="margin: 0 10px"
+            @keydown.enter="onSubmit"
           />
           <n-icon size="16" class="pointer" :component="Delete" @click="delOption(item)" />
         </div>

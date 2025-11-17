@@ -7,12 +7,14 @@ import {
 import { fetchApi } from '@/apis/request'
 import { ContactApplyListResponse_Item } from '@/apis/types'
 import ButtonDropdown from '@/components/basic/ButtonDropdown.vue'
-import { useInject } from '@/hooks'
+import { ContactConst } from '@/constant/event-bus'
+import { useInject, useEventBus } from '@/hooks'
 import { useUserStore } from '@/store'
 import { formatTime } from '@/utils/datetime'
 
 const userStore = useUserStore()
 const { toShowUserInfo, message } = useInject()
+const { emit } = useEventBus([])
 const items = ref<ContactApplyListResponse_Item[]>([])
 const loading = ref(true)
 const isContactApply = computed(() => userStore.isContactApply)
@@ -29,7 +31,7 @@ const onLoadData = async (isClearTip = false) => {
 }
 
 const onInfo = (item: ContactApplyListResponse_Item) => {
-  toShowUserInfo(item.user_id)
+  toShowUserInfo((item as any).friend_id || item.user_id)
 }
 
 const onAccept = async (item: ContactApplyListResponse_Item) => {
@@ -39,13 +41,14 @@ const onAccept = async (item: ContactApplyListResponse_Item) => {
     fetchContactApplyAccept,
     {
       apply_id: item.id,
-      remark: '拒绝'
+      remark: '同意'
     },
     { successText: '已同意' }
   )
   if (err) return
 
   onLoadData()
+  emit(ContactConst.UpdateContactList, {})
   loading.destroy()
 }
 
