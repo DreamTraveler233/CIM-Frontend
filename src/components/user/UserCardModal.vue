@@ -31,9 +31,35 @@ const props = defineProps({
   }
 })
 
+import { nextTick, watch } from 'vue'
+
 const loading = ref(true)
 const isOpenFrom = ref(false)
 const applyRemark = ref('')
+const applyInputRef: any = ref(null)
+
+// 当打开添加好友表单时，将焦点聚焦到输入框（兼容 NaiveUI 组件或 DOM input）
+watch(isOpenFrom, async (val) => {
+  if (!val) return
+  await nextTick()
+  try {
+    // Naive UI 的组件实例可能有 focus 方法
+    const comp = applyInputRef.value
+    if (!comp) return
+
+    if (typeof comp.focus === 'function') {
+      comp.focus()
+      return
+    }
+
+    // 否则查找真实 input 元素并 focus
+    const el = comp.$el ? comp.$el.querySelector('input') : comp.querySelector?.('input')
+    if (el && typeof el.focus === 'function') el.focus()
+  } catch (err) {
+    // 安全处理，避免运行时报错
+    console.warn('applyInputRef focus failed', err)
+  }
+})
 const friendRemark = ref('')
 const userInfo: any = reactive({
   user_id: 0,
@@ -121,8 +147,12 @@ const onJoinContact = async () => {
 
   if (err) return
 
+  // 清除输入并关闭表单
+  applyRemark.value = ''
   isOpenFrom.value = false
 }
+
+// 注意：使用 n-input 的 @keydown.enter 已直接绑定到 onJoinContact
 
 const onChangeRemark = async () => {
   const onSuccess = () => {
@@ -293,9 +323,10 @@ onLoadUserGroup()
 
       <footer v-else-if="userInfo.relation === 1" class="el-footer footer border-top flex-center">
         <template v-if="isOpenFrom">
-          <n-input
+                <n-input
             type="text"
             placeholder="请填写备注信息"
+                  ref="applyInputRef"
             v-model:value="applyRemark"
             @keydown.enter="onJoinContact"
           />

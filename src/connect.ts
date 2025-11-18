@@ -1,5 +1,6 @@
 import { NAvatar } from 'naive-ui'
 import { useTalkStore, useUserStore } from '@/store'
+import { formatTime } from '@/utils/datetime.ts'
 import { notifyIcon } from '@/constant/default'
 import WsSocket from '@/plugins/websocket.ts'
 import EventTalk from '@/event/talk.ts'
@@ -12,7 +13,9 @@ const urlCallback = () => {
     window.location.reload()
   }
 
-  return `${import.meta.env.VITE_SOCKET_API}/wss/default.io?token=${getToken()}`
+  // 显式声明平台，便于后端统计与协议演进（web/pc/app）
+  const platform = 'web'
+  return `${import.meta.env.VITE_SOCKET_API}/wss/default.io?token=${getToken()}&platform=${platform}`
 }
 
 class Connect {
@@ -57,6 +60,7 @@ class Connect {
     this.onImMessage()
     this.onImMessageKeyboard()
     this.onImMessageRevoke()
+    this.onImSessionUpdate()
     this.onImContactApply()
     this.onImGroupApply()
     this.onEventError()
@@ -127,6 +131,29 @@ class Connect {
     this.conn.on('event_error', (data: any) => {
       console.error('WebSocket事件错误:', data)
       window['$message']?.error(`错误代码: ${data.error_code} - ${data.error_message}`)
+    })
+  }
+
+  onImSessionUpdate() {
+    this.conn.on('im.session.update', (data: any) => {
+      // data: { talk_mode, to_from_id, msg_text, updated_at }
+      const { talk_mode, to_from_id } = data
+      const index_name = `${talk_mode}_${to_from_id}`
+
+      let msg_text = ''
+      if (typeof data.msg_text === 'string') msg_text = data.msg_text
+
+      // Updated_at sent from server is ms timestamp, convert to human readable
+      let updated_at = formatTime(data.updated_at || Date.now())
+
+      useTalkStore().updateMessage(
+        {
+          index_name,
+          msg_text,
+          updated_at
+        },
+        true
+      )
     })
   }
 }
