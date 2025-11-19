@@ -55,6 +55,23 @@ const onSendMessage = async (data: any = {}): Promise<boolean> => {
 
   // 异步发送
   if (['text', 'mixed', 'image', 'video', 'code'].includes(params.type)) {
+    // 文本类消息不能为空
+    if (params.type === 'text') {
+      const content = params.body?.text || params.body?.content || ''
+      if (!content || !content.trim()) {
+        message.warning('发送内容不能为空')
+        return true
+      }
+    }
+
+    // mixed 类型必须包含至少一项内容
+    if (params.type === 'mixed') {
+      const items = params.body?.items || []
+      if (!Array.isArray(items) || items.length === 0) {
+        message.warning('发送内容不能为空')
+        return true
+      }
+    }
     addAsyncMessage(params)
     return true
   }

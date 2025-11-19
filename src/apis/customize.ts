@@ -1,4 +1,5 @@
 import { createApi } from './request'
+import type { MessageSendResponse, ForwardSendResponse } from './types.d.ts'
 
 /**
  * 表情包上传接口
@@ -22,7 +23,9 @@ export const fetchUploadInitMultipart = createApi('/api/v1/upload/init-multipart
 export const fetchUploadMultipart = createApi<FormData, any>('/api/v1/upload/multipart')
 
 // 发送代码块消息服务接口
-export const fetchMessageSend = createApi<ServTalkMessageSendRequest, any>('/api/v1/message/send')
+export const fetchMessageSend = createApi<ServTalkMessageSendRequest, MessageSendResponse | ForwardSendResponse>(
+  '/api/v1/message/send'
+)
 
 interface ServTalkMessageSendRequest {
   type: string// 消息类型

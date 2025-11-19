@@ -848,6 +848,20 @@ export interface MessageRecord {
   quote: string
 }
 
+export interface MessageSendResponse extends MessageRecord {}
+
+export interface ForwardSendItem {
+  ok: boolean
+  msg_id?: string
+  err?: string
+  to_talk_mode?: number
+  to_id?: number
+}
+
+export interface ForwardSendResponse {
+  items: ForwardSendItem[]
+}
+
 export interface MessageRecordsClearResponse {
   items: MessageRecord[]
 }

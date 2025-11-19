@@ -145,9 +145,16 @@ class Connect {
   // 更新侧边栏会话预览和时间（保持与后端一致）
   onImSessionUpdate() {
     this.conn.on('im.session.update', (data: any) => {
-      // data: { talk_mode, to_from_id, msg_text, updated_at }
-      const { talk_mode, to_from_id } = data
-      const index_name = `${talk_mode}_${to_from_id}`
+      // data: { talk_mode, to_from_id, sender_id, msg_text, updated_at }
+      const { talk_mode, to_from_id, sender_id } = data
+      
+      // 计算会话索引：如果是单聊且 to_from_id 是我自己，说明对方是 sender_id
+      let partner_id = to_from_id
+      if (talk_mode === 1 && to_from_id === useUserStore().uid) {
+        partner_id = sender_id
+      }
+      
+      const index_name = `${talk_mode}_${partner_id}`
 
       let msg_text = ''
       if (typeof data.msg_text === 'string') msg_text = data.msg_text

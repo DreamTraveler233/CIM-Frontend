@@ -36,6 +36,23 @@ export const useAsyncMessageStore = defineStore('async-message', () => {
   const msgIdsSet = new Set<string>()
   // 添加待推送消息
   function addAsyncMessage(data: IAsyncMessage) {
+    // 校验：禁止发送空白消息
+    if (data.type === 'text') {
+      const content = data.body?.text || data.body?.content || ''
+      if (!content || !content.trim()) {
+        window['$message']?.warning('发送内容不能为空')
+        return
+      }
+    }
+
+    if (data.type === 'mixed') {
+      const items = data.body?.items || []
+      if (!Array.isArray(items) || items.length === 0) {
+        window['$message']?.warning('发送内容不能为空')
+        return
+      }
+    }
+
     data.msg_id = uuid()
     items.push(data)
 
@@ -47,7 +64,9 @@ export const useAsyncMessageStore = defineStore('async-message', () => {
 
   async function sendMessage(message: IAsyncMessage, retryCount = 0) {
     try {
-      const [err] = await fetchApi(fetchMessageSend, message)
+      // 调用后端发送：后端可能返回完整的 message record（msg_id/sequence 等）
+      // 或者在转发场景返回 { items: [...] }
+      const [err, res] = await fetchApi(fetchMessageSend, message)
       if (err) {
         if (retryCount < MAX_RETRIES) {
           await delay(delayStrategy(retryCount))
@@ -62,6 +81,27 @@ export const useAsyncMessageStore = defineStore('async-message', () => {
 
       // 更新对话记录状态
       updateMessageStatus(message.msg_id!, MESSAGE_STATUS_SENT)
+
+      // 如果后端返回了 server msg_id（非转发场景），则把本地临时 msg_id 替换为后端 msg_id
+      // 1. res 可能是 MessageSendResponse 或 ForwardSendResponse
+      if (res && (res as any).msg_id) {
+        const server_msg_id = (res as any).msg_id as string
+
+        // 如果后端返回的 msg_id 和本地 msg_id 不同，需要把本地对话中的 msg_id 更新
+        if (server_msg_id && server_msg_id !== message.msg_id) {
+          dialogueStore.records.forEach((item) => {
+            if (item.msg_id === message.msg_id) {
+              item.msg_id = server_msg_id
+            }
+          })
+
+          // 更新 msgIdsSet：替换本地临时 id 为服务器 id，以便 event 去重能正确匹配
+          if (msgIdsSet.has(message.msg_id!)) {
+            msgIdsSet.delete(message.msg_id!)
+            msgIdsSet.add(server_msg_id)
+          }
+        }
+      }
 
       // 发送成功后将消息从待推送列表中移除
       items = items.filter((item) => item.msg_id !== message.msg_id)

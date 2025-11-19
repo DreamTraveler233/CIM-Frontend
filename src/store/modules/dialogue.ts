@@ -190,12 +190,31 @@ export const useDialogueStore = defineStore('dialogue', {
     },
 
     // 转发聊天记录
-    async forwardRecord(params = {}) {
-      // @ts-expect-error
-      await fetchMessageSend({
+    async forwardRecord(params: any = {}) {
+      const [err, data] = await fetchApi(fetchMessageSend, {
         ...params,
         type: 'forward'
       })
+
+      if (err) return
+
+      // 后端返回的 data 结构: { items: [{ ok, msg_id?, err?, to_talk_mode?, to_id? }, ...] }
+      if (data && (data as any).items && Array.isArray((data as any).items)) {
+        const items = (data as any).items as any[]
+        const success = items.filter((it) => it.ok).length
+        const failed = items.length - success
+
+        if (failed > 0) {
+          window['$message']?.warning(`转发完成 ${success} 成功，${failed} 失败`)
+        } else {
+          window['$message']?.success(`转发成功 ${success} 条消息`) 
+        }
+      }
+
+      // 如果 caller 传了 msg_ids，默认删除原消息（前端已有逻辑），这里不做额外判断
+      if (params.body && params.body.msg_ids) {
+        this.batchDelDialogueRecord(params.body.msg_ids)
+      }
     },
 
     async collectImage(params = {}) {

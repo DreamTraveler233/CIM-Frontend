@@ -1,4 +1,4 @@
-import { storage } from './'
+import { session } from './'
 
 const AccessToken = 'AUTH_TOKEN'
 
@@ -17,7 +17,9 @@ export function isLogin(): boolean {
  * @returns token
  */
 export function getToken(): string {
-  return storage.get(AccessToken) || ''
+  // Use session storage for token so each tab maintains its own session
+  // It prevents login in one tab from affecting another tab
+  return session.get(AccessToken) || ''
 }
 
 /**
@@ -26,12 +28,13 @@ export function getToken(): string {
  * @returns token
  */
 export function setToken(token: string, expire: number): void {
-  storage.set(AccessToken, token, expire)
+  // store token in session (tab-local) with the provided expire
+  session.set(AccessToken, token, expire)
 }
 
 /**
  * 删除登录授权 Token
  */
 export function deleteToken(): void {
-  storage.remove(AccessToken)
+  session.remove(AccessToken)
 }

@@ -78,8 +78,9 @@ class Revoke extends Base {
       updated_at: datetime()
     })
 
-    // 判断当前是否正在和好友对话
-    if (!this.isTalk(this.talk_mode, this.to_from_id)) {
+    // 判断当前是否正在和好友对话（for single chat, to_from_id may be local uid)
+    const toFromCheck = this.isCurrSender() ? this.to_from_id : this.from_id
+    if (!this.isTalk(this.talk_mode, toFromCheck)) {
       return
     }
 

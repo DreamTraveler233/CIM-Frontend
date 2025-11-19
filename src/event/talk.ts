@@ -76,6 +76,12 @@ class Talk extends Base {
    * @return String
    */
   getIndexName(): string {
+    // For single chat, the `to_from_id` in socket payload may be the receiver's uid
+    // (i.e. the local user). We want the index name to reflect the other participant
+    // (peer) id. So if current user equals `to_from_id` then use `from_id` instead.
+    if (this.talk_mode === 1 && this.to_from_id === this.getAccountId()) {
+      return `${this.talk_mode}_${this.from_id}`
+    }
     return `${this.talk_mode}_${this.to_from_id}`
   }
 
@@ -112,7 +118,11 @@ class Talk extends Base {
     }
 
     // 判断当前是否正在和好友对话
-    if (this.isTalk(this.talk_mode, this.to_from_id)) {
+    const otherId = this.talk_mode === 1 && this.to_from_id === this.getAccountId()
+      ? this.from_id
+      : this.to_from_id
+
+    if (this.isTalk(this.talk_mode, otherId)) {
       const isCache = msgIdsCache.has(this.body.msg_id)
       if (isCache) {
         msgIdsCache.clear(this.body.msg_id)
@@ -153,9 +163,14 @@ class Talk extends Base {
    * 加载对接节点
    */
   async addTalkItem() {
+    // For single chat, use the other participant's user id when creating session
+    const payloadToFromId = this.talk_mode === 1 && this.to_from_id === this.getAccountId()
+      ? this.from_id
+      : this.to_from_id
+
     const [err, data] = await fetchApi(fetchTalkSessionCreate, {
       talk_mode: this.talk_mode,
-      to_from_id: this.to_from_id
+      to_from_id: payloadToFromId
     })
 
     if (err) return
@@ -189,9 +204,13 @@ class Talk extends Base {
 
     if (this.getAccountId() !== this.from_id) {
       // 这里需要做节流操作
+      const payloadToFromId = this.talk_mode === 1 && this.to_from_id === this.getAccountId()
+        ? this.from_id
+        : this.to_from_id
+
       fetchTalkSessionClearUnreadNum({
         talk_mode: this.talk_mode,
-        to_from_id: this.to_from_id
+        to_from_id: payloadToFromId
       })
     }
 
@@ -224,13 +243,17 @@ class Talk extends Base {
    * 更新对话列表记录
    */
   updateTalkItem() {
+    const otherId = this.talk_mode === 1 && this.to_from_id === this.getAccountId()
+      ? this.from_id
+      : this.to_from_id
+
     useTalkStore().updateMessage(
       {
         index_name: this.getIndexName(),
         msg_text: this.getTalkText(),
         updated_at: datetime()
       },
-      this.isCurrSender() || this.to_from_id == this.getAccountId()
+      this.isCurrSender() || otherId == this.getAccountId()
     )
   }
 }
