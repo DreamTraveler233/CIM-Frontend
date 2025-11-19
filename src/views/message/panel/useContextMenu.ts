@@ -3,6 +3,7 @@ import { ITalkRecord } from '@/types/chat'
 import { clipboard, htmlDecode, clipboardImage } from '@/utils/common'
 import { downloadImage, getFilenameFromUrl } from '@/utils/file'
 import MultiSelectFooter from './MultiSelectFooter.vue'
+import ContactModal from '@/components/user/ContactModal.vue'
 import { useDialogueStore, useUserStore } from '@/store'
 import { useInject } from '@/hooks'
 
@@ -32,6 +33,7 @@ export function useContextMenu(chat: any) {
 
     options.push({ label: '回复', key: 'quote' })
     options.push({ label: '删除', key: 'delete' })
+    options.push({ label: '转发', key: 'forward' })
     options.push({ label: '多选', key: 'multiSelect' })
 
     if ([3, 4, 5].includes(item.msg_type)) {
@@ -51,6 +53,7 @@ export function useContextMenu(chat: any) {
       download: onDownload,
       quote: onQuote,
       revoke: onRevoke,
+      forward: onSingleForward,
       multiSelect: onMultiSelect,
       delete: onDelete,
       collect: onCollectImage
@@ -200,6 +203,32 @@ export function useContextMenu(chat: any) {
     isShowMultiSelect.value = false
   }
 
+  // 单条消息转发
+  const isShowContactModal = ref(false)
+  const forwardItem = ref<ITalkRecord | null>(null)
+
+  const onSingleForward = (item: ITalkRecord) => {
+    forwardItem.value = item
+    isShowContactModal.value = true
+  }
+
+  const onContactModal = (items: { id: number; type: number }[]) => {
+    if (!forwardItem.value) return
+
+    dialogueStore.forwardRecord({
+      talk_mode: dialogueStore.target.talk_mode,
+      to_from_id: dialogueStore.target.to_from_id,
+      body: {
+        action: 1,
+        msg_ids: [forwardItem.value.msg_id],
+        user_ids: items.filter((item) => item.type == 1).map((item) => item.id),
+        group_ids: items.filter((item) => item.type == 2).map((item) => item.id)
+      }
+    })
+
+    isShowContactModal.value = false
+  }
+
   const MultiSelectComponent = defineComponent(() => {
     return () => {
       return h(MultiSelectFooter, {
@@ -211,6 +240,16 @@ export function useContextMenu(chat: any) {
     }
   })
 
+  const ContactModalComponent = defineComponent(() => {
+    return () =>
+      isShowContactModal.value
+        ? h(ContactModal, {
+            onClose: () => (isShowContactModal.value = false),
+            onOnSubmit: onContactModal
+          })
+        : null
+  })
+
   return {
     multiSelectCount,
     isShowMultiSelect,
@@ -218,5 +257,8 @@ export function useContextMenu(chat: any) {
     onContextMenuEvent,
     onChatElementSelect,
     MultiSelectComponent
+    ,
+    isShowContactModal,
+    ContactModalComponent
   }
 }

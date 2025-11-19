@@ -39,17 +39,15 @@ export const components = {
   [chat.ChatMsgTypeForward]: (extra: any) => {
     return (
       <forward-message
-        count={extra?.msg_ids.length as number}
-        msg-ids={extra?.msg_ids as string[]}
-        talk-mode={extra?.talk_type as number}
-        items={
-          extra.records.map((item: any) => {
-            return {
-              content: item.content as string,
-              nickname: item.nickname as string
-            }
-          }) || []
-        }
+        count={(extra?.msg_ids?.length as number) || (extra?.count as number) || 0}
+        msg-ids={(extra?.msg_ids as string[]) || []}
+        talk-mode={(extra?.talk_type as number) || (extra?.talk_mode as number) || 0}
+        items={((extra?.records as any[]) || []).map((item: any) => {
+          return {
+            content: (item?.content as string) || '',
+            nickname: (item?.nickname as string) || ''
+          }
+        })}
       />
     )
   },

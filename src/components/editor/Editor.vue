@@ -45,6 +45,7 @@ const {
 } = defineProps<Props>()
 
 const editor = ref(null)
+const isComposing = ref(false)
 
 const getQuill = () => {
   // @ts-expect-error
@@ -374,8 +375,51 @@ onMounted(() => {
   loadEditorDraftText()
 })
 
+// composition events for IME (hide placeholder during composition)
+let _handleCompositionStart: any = null
+let _handleCompositionEnd: any = null
+let _hasCompositionListener = false
+
+function addCompositionListeners(root: HTMLElement) {
+  if (!root || _hasCompositionListener) return
+
+  _handleCompositionStart = () => {
+    root.classList.add('ime-composing')
+  }
+
+  _handleCompositionEnd = () => {
+    root.classList.remove('ime-composing')
+  }
+
+  root.addEventListener('compositionstart', _handleCompositionStart)
+  root.addEventListener('compositionend', _handleCompositionEnd)
+  _hasCompositionListener = true
+}
+
+function removeCompositionListeners() {
+  const quill = getQuill()
+  if (!quill || !quill.root) return
+
+  const root: HTMLElement = quill.root
+
+  if (_handleCompositionStart) root.removeEventListener('compositionstart', _handleCompositionStart)
+  if (_handleCompositionEnd) root.removeEventListener('compositionend', _handleCompositionEnd)
+  _hasCompositionListener = false
+}
+
+// watch quill instance to attach composition listeners once ready
+watch(
+  () => getQuill(),
+  (quill) => {
+    if (!quill) return
+    addCompositionListeners(quill.root)
+  },
+  { immediate: true }
+)
+
 onUnmounted(() => {
   hideMentionDom()
+  removeCompositionListeners()
 })
 
 useEventBus([
@@ -449,8 +493,8 @@ useEventBus([
   </section>
 
   <MeEditorVote v-if="isShowEditorVote" @close="isShowEditorVote = false" @submit="onVoteEvent" />
-
   <MeEditorCode
+
     v-if="isShowEditorCode"
     @on-submit="onCodeEvent"
     @close="isShowEditorCode = false"
@@ -547,6 +591,11 @@ html[theme-mode='dark'] {
     Microsoft YaHei,
     'Alibaba PuHuiTi 2.0 45' !important;
   left: 8px;
+}
+
+/* Hide placeholder when IME composition is in progress */
+.ql-editor.ime-composing.ql-blank::before {
+  display: none !important;
 }
 
 .ql-snow .ql-editor img {

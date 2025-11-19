@@ -61,9 +61,17 @@ class Connect {
     this.onImMessageKeyboard()
     this.onImMessageRevoke()
     this.onImSessionUpdate()
+    this.onImSessionReload()
     this.onImContactApply()
     this.onImGroupApply()
     this.onEventError()
+  }
+
+  onImSessionReload() {
+    // 收到会话刷新事件后，主动拉取会话列表以刷新侧边栏
+    this.conn.on('im.session.reload', () => {
+      useTalkStore().loadTalkList()
+    })
   }
 
   onPing() {
@@ -71,8 +79,8 @@ class Connect {
   }
 
   onPong() {
-    this.conn.on('pong', () => {})
-    this.conn.on('connect', () => {})
+    this.conn.on('pong', () => { })
+    this.conn.on('connect', () => { })
   }
 
   onImMessage() {
@@ -134,6 +142,7 @@ class Connect {
     })
   }
 
+  // 更新侧边栏会话预览和时间（保持与后端一致）
   onImSessionUpdate() {
     this.conn.on('im.session.update', (data: any) => {
       // data: { talk_mode, to_from_id, msg_text, updated_at }

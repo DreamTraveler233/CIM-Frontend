@@ -36,7 +36,8 @@ const {
   contextMenuOptions,
   onContextMenuEvent,
   onChatElementSelect,
-  MultiSelectComponent
+  MultiSelectComponent,
+  ContactModalComponent
 } = useContextMenu(chat)
 
 // 当前对话参数
@@ -202,6 +203,7 @@ onUnmounted(() => {
           }
         "
       />
+        <component :is="ContactModalComponent" />
     </template>
 
     <template #aside>

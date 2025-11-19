@@ -25,10 +25,10 @@ export const fetchUploadMultipart = createApi<FormData, any>('/api/v1/upload/mul
 export const fetchMessageSend = createApi<ServTalkMessageSendRequest, any>('/api/v1/message/send')
 
 interface ServTalkMessageSendRequest {
-  type: string
-  quote_id?: string
-  body: any
-  talk_mode: number
-  to_from_id: number
-  msg_id?: string
+  type: string// 消息类型
+  quote_id?: string// 引用消息ID（可选）
+  body: any// 消息内容
+  talk_mode: number// 对话模式
+  to_from_id: number// 对话对象ID
+  msg_id?: string// 消息ID（可选）
 }

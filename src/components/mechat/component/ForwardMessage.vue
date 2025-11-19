@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import ForwardRecord from '@/components/mechat/ChatForwardRecord.vue'
 
 const props = defineProps<{
@@ -14,7 +14,11 @@ const props = defineProps<{
 
 const isShowRecord = ref(false)
 
-const title = [...new Set(props.items.map((v) => v.nickname))].join('、')
+const title = computed(() => {
+  // 使用 computed 确保 title 随外部 props.items 更新而自动刷新
+  const arr = props.items || []
+  return [...new Set(arr.map((v) => v.nickname))].join('、')
+})
 </script>
 <template>
   <section class="immsg-forward pointer" @click="isShowRecord = true">
