@@ -193,13 +193,19 @@ class Talk extends Base {
       useDialogueStore().addDialogueRecord(record)
     }
 
+    // 如果当前正在与对方会话中，则视为已读；否则计为未读
+    const otherId = this.talk_mode === 1 && this.to_from_id === this.getAccountId()
+      ? this.from_id
+      : this.to_from_id
+
     useTalkStore().updateMessage(
       {
         index_name: this.getIndexName(),
         msg_text: this.getTalkText(),
         updated_at: datetime()
       },
-      this.isCurrSender()
+      // 标记为已读的条件：当前聊天窗口正打开并且是该会话，或者是自己发送的消息
+      (this.isCurrSender() || this.isTalk(this.talk_mode, otherId)) ? 'clear' : 'increase'
     )
 
     if (this.getAccountId() !== this.from_id) {
@@ -211,6 +217,12 @@ class Talk extends Base {
       fetchTalkSessionClearUnreadNum({
         talk_mode: this.talk_mode,
         to_from_id: payloadToFromId
+      })
+      .then(() => {
+        // 当前会话已打开时，主动清空本地未读计数，避免 UI 显示红点
+        if (this.isTalk(this.talk_mode, payloadToFromId)) {
+          useTalkStore().clearUnreadNum(this.getIndexName())
+        }
       })
     }
 
@@ -253,7 +265,7 @@ class Talk extends Base {
         msg_text: this.getTalkText(),
         updated_at: datetime()
       },
-      this.isCurrSender() || otherId == this.getAccountId()
+      (this.isCurrSender() || otherId == this.getAccountId()) ? 'clear' : 'increase'
     )
   }
 }

@@ -52,18 +52,19 @@ export const useTalkStore = defineStore('talk', {
 
     updateMessage(
       params: Pick<ISession, 'index_name' | 'msg_text' | 'updated_at'>,
-      isClear = false
+      action: 'increase' | 'clear' | 'keep' = 'increase'
     ) {
       const index = this.findIndex(params.index_name)
       if (index === -1) return
 
       const item = this.items[index]
 
-      if (isClear) {
+      if (action === 'clear') {
         item.unread_num = 0
-      } else {
+      } else if (action === 'increase') {
         item.unread_num++
       }
+      // if action === 'keep', do nothing to unread_num
 
       item.msg_text = params.msg_text
       item.updated_at = params.updated_at

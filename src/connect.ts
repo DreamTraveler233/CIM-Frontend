@@ -7,6 +7,7 @@ import EventTalk from '@/event/talk.ts'
 import EventKeyboard from '@/event/keyboard.ts'
 import EventRevoke from '@/event/revoke.ts'
 import { getToken, isLogin } from '@/utils/auth.ts'
+import { useDialogueStore } from '@/store'
 
 const urlCallback = () => {
   if (!isLogin()) {
@@ -162,13 +163,17 @@ class Connect {
       // Updated_at sent from server is ms timestamp, convert to human readable
       let updated_at = formatTime(data.updated_at || Date.now())
 
+      // 若当前打开的对话正是这个 session，则视为已读，否则计为未读（默认更新通知）
+      const dialogueStore = useDialogueStore()
+      const isActive = dialogueStore.index_name === index_name
+
       useTalkStore().updateMessage(
         {
           index_name,
           msg_text,
           updated_at
         },
-        true
+        isActive ? 'clear' : 'keep'
       )
     })
   }
