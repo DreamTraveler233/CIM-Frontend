@@ -1,4 +1,5 @@
 import { fetchMessageSend } from '@/apis/customize'
+import { fetchMessageStatus } from '@/apis/api'
 import { fetchApi } from '@/apis/request'
 import * as chat from '@/constant/chat'
 import { datetime } from '@/utils/datetime'
@@ -6,6 +7,7 @@ import { defineStore } from 'pinia'
 import { v4 as uuidv4 } from 'uuid'
 import { nextTick } from 'vue'
 import { useDialogueStore } from './dialogue'
+import { useFailedMessageStore } from './failed-message'
 import { useUserStore } from './user'
 
 type IAsyncMessage = {
@@ -73,14 +75,14 @@ export const useAsyncMessageStore = defineStore('async-message', () => {
           await sendMessage(message, retryCount + 1)
         } else {
           console.error(`Failed to send message after ${MAX_RETRIES} retries`, message)
-          updateMessageStatus(message.msg_id!, MESSAGE_STATUS_FAILED)
+          updateMessageStatus(message.msg_id!, MESSAGE_STATUS_FAILED, `${message.talk_mode}_${message.to_from_id}`)
           msgIdsSet.delete(message.msg_id!)
         }
         return
       }
 
       // 更新对话记录状态
-      updateMessageStatus(message.msg_id!, MESSAGE_STATUS_SENT)
+      updateMessageStatus(message.msg_id!, MESSAGE_STATUS_SENT, `${message.talk_mode}_${message.to_from_id}`)
 
       // 如果后端返回了 server msg_id（非转发场景），则把本地临时 msg_id 替换为后端 msg_id
       // 1. res 可能是 MessageSendResponse 或 ForwardSendResponse
@@ -100,8 +102,38 @@ export const useAsyncMessageStore = defineStore('async-message', () => {
             msgIdsSet.delete(message.msg_id!)
             msgIdsSet.add(server_msg_id)
           }
+          // 如果本地该消息原先被标记为失败，迁移失败标记
+          try {
+            const key = `${message.talk_mode}_${message.to_from_id}`
+            if (failedStore.has(key, message.msg_id!)) {
+              failedStore.removeFailed(key, message.msg_id!)
+              failedStore.addFailed(key, server_msg_id)
+              // 同步服务器端状态（将临时消息对应的服务器消息也标记为失败）
+              try {
+                fetchApi(fetchMessageStatus, {
+                  talk_mode: message.talk_mode,
+                  to_from_id: message.to_from_id,
+                  msg_id: server_msg_id,
+                  status: MESSAGE_STATUS_FAILED
+                }).catch(() => {})
+              } catch (_) {}
+            }
+          } catch (_) {}
         }
       }
+
+      // 非好友导致的失效消息（后端仍返回成功，但 extra.invalid 标记）
+      try {
+        const extraStr = (res as any).extra
+        if (typeof extraStr === 'string') {
+          const extraJson = JSON.parse(extraStr)
+          if (extraJson?.invalid) {
+            // 标记发送失败样式 & 弹提示（类似撤回提示临时出现）
+            updateMessageStatus((res as any).msg_id || message.msg_id!, MESSAGE_STATUS_FAILED, `${message.talk_mode}_${message.to_from_id}`)
+            window['$message']?.error('对方已不是你的好友，请重新添加')
+          }
+        }
+      } catch (_) {}
 
       // 发送成功后将消息从待推送列表中移除
       items = items.filter((item) => item.msg_id !== message.msg_id)
@@ -160,13 +192,51 @@ export const useAsyncMessageStore = defineStore('async-message', () => {
     })
   }
 
+  const failedStore = useFailedMessageStore()
+
   // 更新消息状态
-  function updateMessageStatus(msg_id: string, status: number) {
+  function updateMessageStatus(msg_id: string, status: number, sessionKey?: string) {
     dialogueStore.records.forEach((item) => {
       if (item.msg_id === msg_id) {
         item.status = status
       }
     })
+
+    // 持久化失败状态（3 = failed）
+    if (status === MESSAGE_STATUS_FAILED) {
+      // If session key absent, use current dialogue index
+      const key = sessionKey || dialogueStore.index_name || ''
+      failedStore.addFailed(key, msg_id)
+      // 如果本条是当前用户发送，则同步至服务端
+      try {
+        const key = sessionKey || dialogueStore.index_name || ''
+        const parts = key.split('_')
+        const talk_mode = Number(parts[0] || 0)
+        const to_from_id = Number(parts[1] || 0)
+        // 只有发送者才可以更新消息状态至服务器
+        const item = dialogueStore.records.find((it) => it.msg_id === msg_id)
+        if (item && item.from_id === uid) {
+          fetchApi(fetchMessageStatus, { talk_mode, to_from_id, msg_id, status }).catch(() => {})
+        }
+      } catch (_) {}
+    }
+
+    // 成功则移除失败标记
+    if (status === MESSAGE_STATUS_SENT) {
+      const key = sessionKey || dialogueStore.index_name || ''
+      failedStore.removeFailed(key, msg_id)
+      // 若本条是当前用户发送，则同步状态至服务端（把失败标记清除）
+      try {
+        const key = sessionKey || dialogueStore.index_name || ''
+        const parts = key.split('_')
+        const talk_mode = Number(parts[0] || 0)
+        const to_from_id = Number(parts[1] || 0)
+        const item = dialogueStore.records.find((it) => it.msg_id === msg_id)
+        if (item && item.from_id === uid) {
+          fetchApi(fetchMessageStatus, { talk_mode, to_from_id, msg_id, status }).catch(() => {})
+        }
+      } catch (_) {}
+    }
   }
 
   const msgIdsCache = {

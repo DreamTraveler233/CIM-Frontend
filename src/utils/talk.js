@@ -31,12 +31,18 @@ export function formatTalkItem(params) {
     content: '...',
     draft_text: '',
     msg_text: '',
+    invalid: false,
     index_name: '',
     updated_at: datetime()
   }
 
   options = { ...options, ...params }
   options.index_name = `${options.talk_mode}_${options.to_from_id}`
+
+  // 若后端返回特定的失败摘要，则判断为 invalid 状态
+  if (options.msg_text === '发送失败') {
+    options.invalid = true
+  }
 
   return options
 }

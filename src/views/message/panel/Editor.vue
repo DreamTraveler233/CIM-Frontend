@@ -187,6 +187,7 @@ const onSendMixedEvent = (data: any): Promise<boolean> => {
 
 const onKeyboardPush = throttle(() => {
   ws.emit('im.message.keyboard', {
+    talk_mode: props.talkMode,
     to_from_id: props.toFromId
   })
 }, 3000)

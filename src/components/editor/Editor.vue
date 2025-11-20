@@ -45,7 +45,6 @@ const {
 } = defineProps<Props>()
 
 const editor = ref(null)
-const isComposing = ref(false)
 
 const getQuill = () => {
   // @ts-expect-error
@@ -374,6 +373,18 @@ watch(() => indexName, loadEditorDraftText, { immediate: true })
 onMounted(() => {
   loadEditorDraftText()
 })
+
+useEventBus([
+  {
+    name: EditorConst.Focus,
+    event: () => {
+      const quill = getQuill()
+      try {
+        quill && quill.focus()
+      } catch (_) {}
+    }
+  }
+])
 
 // composition events for IME (hide placeholder during composition)
 let _handleCompositionStart: any = null

@@ -9,6 +9,9 @@ import { ContactApplyListResponse_Item } from '@/apis/types'
 import ButtonDropdown from '@/components/basic/ButtonDropdown.vue'
 import { ContactConst } from '@/constant/event-bus'
 import { useInject, useEventBus } from '@/hooks'
+import { EditorConst } from '@/constant/event-bus'
+import { useRouter } from 'vue-router'
+import { useTalkStore } from '@/store/modules/talk'
 import { useUserStore } from '@/store'
 import { formatTime } from '@/utils/datetime'
 
@@ -16,6 +19,8 @@ const userStore = useUserStore()
 const { toShowUserInfo, message } = useInject()
 const { emit } = useEventBus([])
 const items = ref<ContactApplyListResponse_Item[]>([])
+// 正在处理的申请 ID 列表（用于禁用按钮）
+const processingIds = ref<number[]>([])
 const loading = ref(true)
 const isContactApply = computed(() => userStore.isContactApply)
 
@@ -34,28 +39,57 @@ const onInfo = (item: ContactApplyListResponse_Item) => {
   toShowUserInfo((item as any).friend_id || item.user_id)
 }
 
-const onAccept = async (item: ContactApplyListResponse_Item) => {
-  let loading = message.loading('请稍等，正在处理')
+const router = useRouter()
+const talkStore = useTalkStore()
 
-  const [err] = await fetchApi(
-    fetchContactApplyAccept,
-    {
-      apply_id: item.id,
-      remark: '同意'
-    },
-    { successText: '已同意' }
-  )
-  if (err) return
+const onAccept = async (item: ContactApplyListResponse_Item) => {
+  // 防止重复点击
+  if (processingIds.value.includes(item.id)) return
+  processingIds.value.push(item.id)
+  const loading = message.loading('请稍等，正在处理')
+
+  try {
+    const [err, resp] = await fetchApi(
+      fetchContactApplyAccept,
+      {
+        apply_id: item.id,
+        remark: '同意'
+      },
+      { successText: '已同意' }
+    )
+    if (err) return
 
   onLoadData()
   emit(ContactConst.UpdateContactList, {})
-  loading.destroy()
+
+  // 使用服务端返回的 session 打开会话窗口（私聊），若无 session 则提示用户稍后
+  try {
+    const session = (resp && (resp as any).session) || null
+    if (session) {
+      await talkStore.toTalk(session.talk_mode, session.to_from_id, router)
+    }
+    // 聚焦聊天输入框（延迟触发，确保 EditorMounted）
+    setTimeout(() => emit(EditorConst.Focus, {}), 80)
+    // 尝试把会话列表滚动到顶部（新会话位于最上层）
+    setTimeout(() => emit('talk-session-scroll', { top: 0 }), 120)
+  } catch (err) {
+    console.error('Failed to open chat after accepting friend', err)
+  }
+  } finally {
+    loading.destroy()
+    // 移除 processing id
+    const idx = processingIds.value.indexOf(item.id)
+    if (idx !== -1) processingIds.value.splice(idx, 1)
+  }
 }
 
 const onDecline = async (item: ContactApplyListResponse_Item) => {
-  let loading = message.loading('请稍等，正在处理')
+  if (processingIds.value.includes(item.id)) return
+  processingIds.value.push(item.id)
+  const loading = message.loading('请稍等，正在处理')
 
-  const [err] = await fetchApi(
+  try {
+    const [err] = await fetchApi(
     fetchContactApplyDecline,
     {
       apply_id: item.id,
@@ -63,10 +97,14 @@ const onDecline = async (item: ContactApplyListResponse_Item) => {
     },
     { successText: '已拒绝' }
   )
-  if (err) return
+    if (err) return
 
-  onLoadData()
-  loading.destroy()
+    onLoadData()
+  } finally {
+    loading.destroy()
+    const idx = processingIds.value.indexOf(item.id)
+    if (idx !== -1) processingIds.value.splice(idx, 1)
+  }
 }
 
 watch(isContactApply, () => {
@@ -106,6 +144,8 @@ onMounted(() => {
           primary-type="default"
           :options="[{ label: '忽略', key: 'delete' }]"
           size="small"
+          :loading="processingIds.includes(item.id)"
+          :disabled="processingIds.includes(item.id)"
           @primary-click="onAccept(item)"
           @select="
             (key) => {

@@ -156,10 +156,14 @@ import type {
   MessageRecordsResponse,
   MessageRevokeRequest,
   MessageRevokeResponse,
+  MessageStatusRequest,
+  MessageStatusResponse,
   OrganizeDepartmentListRequest,
   OrganizeDepartmentListResponse,
   OrganizePersonnelListRequest,
   OrganizePersonnelListResponse,
+  TalkSessionClearRecordsRequest,
+  TalkSessionClearRecordsResponse,
   TalkSessionClearUnreadNumRequest,
   TalkSessionClearUnreadNumResponse,
   TalkSessionCreateRequest,
@@ -802,6 +806,14 @@ export const fetchMessageRevoke = createApi<MessageRevokeRequest, MessageRevokeR
 )
 
 /**
+ * 更新消息状态接口（sender 或者服务器在特殊场景标记消息失败）
+ */
+export const fetchMessageStatus = createApi<MessageStatusRequest, MessageStatusResponse>(
+  '/api/v1/message/status',
+  'POST'
+)
+
+/**
  * 获取组织部门列表接口
  */
 export const fetchOrganizeDepartmentList = createApi<
@@ -816,6 +828,14 @@ export const fetchOrganizePersonnelList = createApi<
   OrganizePersonnelListRequest,
   OrganizePersonnelListResponse
 >('/api/v1/organize/personnel-list', 'POST')
+
+/**
+ * 会话消息记录清空接口
+ */
+export const fetchTalkSessionClearRecords = createApi<
+  TalkSessionClearRecordsRequest,
+  TalkSessionClearRecordsResponse
+>('/api/v1/talk/session-clear-records', 'POST')
 
 /**
  * 会话未读数清除接口

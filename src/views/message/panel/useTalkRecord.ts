@@ -1,5 +1,6 @@
 import { fetchMessageRecords } from '@/apis/api'
 import { useDialogueStore } from '@/store'
+import { useFailedMessageStore } from '@/store/modules/failed-message'
 import { ITalkRecord } from '@/types/chat'
 import { safeParseJson } from '@/utils/common'
 
@@ -34,12 +35,24 @@ export function useTalkRecord() {
         dialogueStore.clearDialogueRecord()
       }
 
-      const list = data.items.map((item: any) => {
-        item.extra = safeParseJson(item.extra || '{}')
-        item.quote = safeParseJson(item.quote || '{}')
-        item.status = 1
-        return item
-      })
+        const failedStore = useFailedMessageStore()
+        const sessionKey = `${request.talk_mode}_${request.to_from_id}`
+
+          const list = data.items.map((item: any) => {
+            item.extra = safeParseJson(item.extra || '{}')
+            item.quote = safeParseJson(item.quote || '{}')
+            // Respect server status if present, fall back to 1 (sent)
+            if (!item.status || ![1, 2, 3].includes(Number(item.status))) {
+              item.status = 1
+            }
+
+            // If frontend previously marked this message as failed, keep it failed
+            if (failedStore.has(sessionKey, item.msg_id)) {
+              item.status = 3
+            }
+
+            return item
+          })
 
       dialogueStore.unshiftDialogueRecord(list.reverse())
       cursor = data.cursor

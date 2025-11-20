@@ -40,7 +40,7 @@ defineProps<{
             <span class="detail" v-html="data.draft_text" />
           </template>
           <template v-else>
-            <span class="detail" v-html="data.msg_text" />
+            <span class="detail" :class="{ 'invalid-preview': data.invalid }" v-html="data.msg_text" />
           </template>
         </div>
 
@@ -165,11 +165,15 @@ defineProps<{
           flex-shrink: 0;
         }
 
-        .detail {
+          .detail {
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
         }
+          .invalid-preview {
+            color: #ff4d4f;
+            font-weight: 600;
+          }
       }
 
       .tip {

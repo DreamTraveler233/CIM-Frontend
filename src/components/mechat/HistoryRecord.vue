@@ -6,6 +6,7 @@ import { formatChatMessage } from '@/components/mechat/render.tsx'
 import * as components from '@/constant/chat'
 import { ITalkRecord } from '@/types/chat'
 import { safeParseJson } from '@/utils/common'
+import { useFailedMessageStore } from '@/store/modules/failed-message'
 import { Calendar } from '@icon-park/vue-next'
 import { reactive, ref, useTemplateRef } from 'vue'
 
@@ -22,7 +23,7 @@ const props = defineProps({
 })
 const chat = useTemplateRef('chat')
 
-const customMessageRender = (item: any) => formatChatMessage(2054, item)
+const customMessageRender = (item: any) => formatChatMessage(2054, item, props.talkMode, props.toFromId)
 
 const model = reactive({
   cursor: 0,
@@ -74,10 +75,18 @@ const loadChatRecord = async (): Promise<boolean> => {
     items.value = []
   }
 
+  const failedStore = useFailedMessageStore()
+
+  const sessionKey = `${props.talkMode}_${props.toFromId}`
   const list = data.items.map((item: any) => {
     item.extra = safeParseJson(item.extra)
     item.quote = safeParseJson(item.quote)
-    item.status = 1
+    if (!item.status || ![1, 2, 3].includes(Number(item.status))) {
+      item.status = 1
+    }
+    if (failedStore.has(sessionKey, item.msg_id)) {
+      item.status = 3
+    }
     return item
   })
 

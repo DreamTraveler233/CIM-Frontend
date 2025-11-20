@@ -1,4 +1,4 @@
-import { fetchTalkSessionDelete, fetchTalkSessionDisturb, fetchTalkSessionTop } from '@/apis/api'
+import { fetchTalkSessionDelete, fetchTalkSessionDisturb, fetchTalkSessionTop, fetchTalkSessionClearRecords } from '@/apis/api'
 import { fetchApi } from '@/apis/request'
 import { useContact, useGroup, useInject } from '@/hooks'
 import { IDropdownOption, useCommonContextMenu } from '@/hooks/useCommonContextMenu.ts'
@@ -81,6 +81,12 @@ export function useSessionMenu() {
       icon: renderIcon(Clear),
       label: '移除会话',
       key: 'remove'
+    })
+
+    options.push({
+      icon: renderIcon(Delete),
+      label: '清空记录',
+      key: 'clear_records'
     })
 
     options && menu.show(e, options, item)
@@ -186,6 +192,25 @@ export function useSessionMenu() {
     )
   }
 
+  // 清空聊天记录
+  const onClearRecords = async (item: ISession) => {
+    const [err] = await fetchApi(fetchTalkSessionClearRecords, {
+      talk_mode: item.talk_mode,
+      to_from_id: item.to_from_id
+    })
+
+    if (!err) {
+      message.success('聊天记录已清空')
+      if (item.index_name === indexName.value) {
+        dialogueStore.clearDialogueRecord()
+      }
+      talkStore.updateItem({
+        index_name: item.index_name,
+        msg_text: ''
+      })
+    }
+  }
+
   // 注册回调事件
   const evnets = {
     info: onUserInfo,
@@ -194,7 +219,8 @@ export function useSessionMenu() {
     disturb: onSetDisturb,
     signout_group: onSignOutGroup,
     delete_contact: onDeleteContact,
-    remark: onChangeRemark
+    remark: onChangeRemark,
+    clear_records: onClearRecords
   }
 
   // 会话列表右键菜单回调事件

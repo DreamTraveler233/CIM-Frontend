@@ -51,7 +51,7 @@ export const useTalkStore = defineStore('talk', {
     },
 
     updateMessage(
-      params: Pick<ISession, 'index_name' | 'msg_text' | 'updated_at'>,
+      params: Pick<ISession, 'index_name' | 'msg_text' | 'updated_at'> & { invalid?: boolean },
       action: 'increase' | 'clear' | 'keep' = 'increase'
     ) {
       const index = this.findIndex(params.index_name)
@@ -67,6 +67,9 @@ export const useTalkStore = defineStore('talk', {
       // if action === 'keep', do nothing to unread_num
 
       item.msg_text = params.msg_text
+      if (typeof params.invalid !== 'undefined') {
+        ;(item as any).invalid = params.invalid
+      }
       item.updated_at = params.updated_at
 
       if (index !== 0) {

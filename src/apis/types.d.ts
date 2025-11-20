@@ -321,7 +321,9 @@ export interface ContactApplyAcceptRequest {
   remark?: string
 }
 
-export interface ContactApplyAcceptResponse {}
+export interface ContactApplyAcceptResponse {
+  session?: TalkSessionItem
+}
 
 export interface ContactApplyCreateRequest {
   user_id?: number
@@ -843,6 +845,7 @@ export interface MessageRecord {
   nickname: string
   avatar: string
   is_revoked: number
+  status: number
   send_time: string
   extra: string
   quote: string
@@ -885,6 +888,15 @@ export interface MessageRevokeRequest {
 }
 
 export interface MessageRevokeResponse {}
+
+export interface MessageStatusRequest {
+  talk_mode: number
+  to_from_id: number
+  msg_id: string
+  status: number
+}
+
+export interface MessageStatusResponse {}
 
 export interface OrganizeDepartmentListRequest {}
 
@@ -948,6 +960,13 @@ export interface TalkSessionClearUnreadNumRequest {
 }
 
 export interface TalkSessionClearUnreadNumResponse {}
+
+export interface TalkSessionClearRecordsRequest {
+  talk_mode?: number
+  to_from_id?: number
+}
+
+export interface TalkSessionClearRecordsResponse {}
 
 export interface TalkSessionCreateRequest {
   /** 1:私聊 2:群聊 */

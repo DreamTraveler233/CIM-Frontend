@@ -12,6 +12,10 @@ interface Props {
   size?: 'small' | 'medium' | 'large'
   // 是否为幽灵按钮
   ghost?: boolean
+  // 主按钮 loading 状态
+  loading?: boolean
+  // 主按钮 disabled 状态
+  disabled?: boolean
 }
 
 withDefaults(defineProps<Props>(), {
@@ -20,6 +24,8 @@ withDefaults(defineProps<Props>(), {
   options: () => [],
   size: 'medium',
   ghost: false
+  ,loading: false
+  ,disabled: false
 })
 
 const emit = defineEmits<{
@@ -38,7 +44,7 @@ const handleSelect = (key: string) => {
 
 <template>
   <n-button-group size="tiny">
-    <n-button :type="primaryType" :ghost="ghost" @click="onPrimaryClick">
+    <n-button :type="primaryType" :ghost="ghost" :loading="loading" :disabled="disabled" @click="onPrimaryClick">
       {{ primaryText }}
     </n-button>
 
@@ -51,7 +57,7 @@ const handleSelect = (key: string) => {
       @select="handleSelect"
       :options="options"
     >
-      <n-button :ghost="ghost">
+      <n-button :ghost="ghost" :disabled="disabled">
         <template #icon>
           <n-icon :component="Down" />
         </template>

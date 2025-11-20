@@ -11,6 +11,7 @@ import { TalkModeEnum } from '@/constant/chat'
 import { ITalkRecord } from '@/types/chat'
 import { defineStore } from 'pinia'
 import { useEditorStore } from './editor'
+import { useFailedMessageStore } from './failed-message'
 
 // 键盘消息事件定时器
 let keyboardTimeout: NodeJS.Timeout
@@ -135,6 +136,15 @@ export const useDialogueStore = defineStore('dialogue', {
       const item = this.records.find((item: ITalkRecord) => item.msg_id === msg_id)
 
       item && Object.assign(item, params)
+
+      // 如果这条消息被撤回或状态变更为已发送，则移除失败标记
+      try {
+        const failedStore = useFailedMessageStore()
+        const sessionKey = this.index_name
+        if (params.is_revoked === 1 || params.status === 1) {
+          failedStore.removeFailed(sessionKey, msg_id)
+        }
+      } catch (_) {}
     },
 
     // 批量删除对话记录
@@ -173,6 +183,11 @@ export const useDialogueStore = defineStore('dialogue', {
 
       if (err) return
 
+      // 删除失败标记（如果存在）
+      const failedStore = useFailedMessageStore()
+      const sessionKey = this.index_name
+      msgIds.forEach((id) => failedStore.removeFailed(sessionKey, id))
+
       this.batchDelDialogueRecord(msgIds)
     },
 
@@ -185,6 +200,11 @@ export const useDialogueStore = defineStore('dialogue', {
       })
 
       if (err) return
+
+      // 删除失败标记（如果存在）
+      const failedStore = useFailedMessageStore()
+      const sessionKey = this.index_name
+      failedStore.removeFailed(sessionKey, msg_id)
 
       this.updateDialogueRecord({ msg_id, is_revoked: 1 })
     },
@@ -213,7 +233,14 @@ export const useDialogueStore = defineStore('dialogue', {
 
       // 如果 caller 传了 msg_ids，默认删除原消息（前端已有逻辑），这里不做额外判断
       if (params.body && params.body.msg_ids) {
-        this.batchDelDialogueRecord(params.body.msg_ids)
+        const msgIds = params.body.msg_ids as string[]
+
+        // 删除失败标记（如果存在）
+        const failedStore = useFailedMessageStore()
+        const sessionKey = this.index_name
+        msgIds.forEach((id) => failedStore.removeFailed(sessionKey, id))
+
+        this.batchDelDialogueRecord(msgIds)
       }
     },
 

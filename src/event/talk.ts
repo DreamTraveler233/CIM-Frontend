@@ -202,7 +202,8 @@ class Talk extends Base {
       {
         index_name: this.getIndexName(),
         msg_text: this.getTalkText(),
-        updated_at: datetime()
+        updated_at: datetime(),
+        invalid: !!this.body.extra?.invalid
       },
       // 标记为已读的条件：当前聊天窗口正打开并且是该会话，或者是自己发送的消息
       (this.isCurrSender() || this.isTalk(this.talk_mode, otherId)) ? 'clear' : 'increase'
@@ -263,7 +264,8 @@ class Talk extends Base {
       {
         index_name: this.getIndexName(),
         msg_text: this.getTalkText(),
-        updated_at: datetime()
+        updated_at: datetime(),
+        invalid: !!this.body.extra?.invalid
       },
       (this.isCurrSender() || otherId == this.getAccountId()) ? 'clear' : 'increase'
     )

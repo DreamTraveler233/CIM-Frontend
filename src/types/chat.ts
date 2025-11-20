@@ -23,6 +23,7 @@ export interface ISession {
   unread_num: number // 未读消息数
   updated_at: string // 最后发送时间
   msg_text?: string // 消息内容
+  invalid?: boolean // 是否为无效/发送失败的 preview
   draft_text?: string // 草稿文本
 }
 

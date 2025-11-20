@@ -8,6 +8,8 @@ export const enum ContactConst {
 export const enum EditorConst {
   Mention = 'editor:mention',
   Quote = 'editor:quote'
+  ,
+  Focus = 'editor:focus'
 }
 
 export const enum SessionConst {

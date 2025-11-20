@@ -1,6 +1,7 @@
 import { NAvatar } from 'naive-ui'
 import { useTalkStore, useUserStore } from '@/store'
 import { formatTime } from '@/utils/datetime.ts'
+import { formatTalkItem } from '@/utils/talk'
 import { notifyIcon } from '@/constant/default'
 import WsSocket from '@/plugins/websocket.ts'
 import EventTalk from '@/event/talk.ts'
@@ -64,6 +65,8 @@ class Connect {
     this.onImSessionUpdate()
     this.onImSessionReload()
     this.onImContactApply()
+    this.onImContactAccept()
+    this.onImSessionCreate()
     this.onImGroupApply()
     this.onEventError()
   }
@@ -102,7 +105,7 @@ class Connect {
         title: '好友申请通知',
         content: data.remark,
         description: `申请人: ${data.nickname}`,
-        meta: data.apply_time,
+        meta: formatTime(data.apply_time),
         avatar: () =>
           h(NAvatar, {
             size: 'small',
@@ -114,6 +117,50 @@ class Connect {
       })
 
       useUserStore().isContactApply = true
+    })
+  }
+
+  onImContactAccept() {
+    this.conn.on('im.contact.accept', (data: any) => {
+      window['$notification']?.create({
+        title: '好友申请已同意',
+        description: `${data.acceptor_name} 已同意你的好友请求`,
+        meta: formatTime(data.accept_time),
+        avatar: () =>
+          h(NAvatar, {
+            size: 'small',
+            round: true,
+            src: notifyIcon,
+            style: 'background-color:#fff;'
+          }),
+        duration: 100000
+      })
+
+      // If the payload contains session, add it to talk list
+      if (data.session) {
+        const talkStore = useTalkStore()
+        const item = formatTalkItem(data.session)
+        const idx = talkStore.findIndex(item.index_name)
+        if (idx === -1) {
+          talkStore.addItem(item)
+        } else {
+          talkStore.updateItem(item as any)
+        }
+      }
+    })
+  }
+
+  onImSessionCreate() {
+    this.conn.on('im.session.create', (data: any) => {
+      // add created session to the talk list
+      const talkStore = useTalkStore()
+      const item = formatTalkItem(data)
+      const idx = talkStore.findIndex(item.index_name)
+      if (idx === -1) {
+        talkStore.addItem(item)
+      } else {
+        talkStore.updateItem(item)
+      }
     })
   }
 
@@ -171,7 +218,8 @@ class Connect {
         {
           index_name,
           msg_text,
-          updated_at
+          updated_at,
+          invalid: !!data.invalid
         },
         isActive ? 'clear' : 'keep'
       )

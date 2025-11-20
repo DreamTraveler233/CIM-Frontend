@@ -57,7 +57,14 @@ const talkParams = reactive({
  * 自定义消息渲染器
  * @param item
  */
-const customMessageRender = (item: any) => formatChatMessage(talkParams.uid, item)
+const customMessageRender = (item: any) =>
+  formatChatMessage(
+    // unwrap computed refs from talkParams
+    (talkParams.uid as any).value ?? (talkParams.uid as any),
+    item,
+    (talkParams.talkMode as any).value ?? (talkParams.talkMode as any),
+    (talkParams.toFromId as any).value ?? (talkParams.toFromId as any)
+  )
 
 function onElementClickUser(key: string, item: any) {
   if (key === 'nickname') {
